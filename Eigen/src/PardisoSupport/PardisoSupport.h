@@ -64,6 +64,37 @@ namespace internal
     }
   };
 
+  template<>
+  struct pardiso_run_selector<long int>
+  {
+    typedef long int IndexType;
+    static IndexType run( _MKL_DSS_HANDLE_t pt, IndexType maxfct, IndexType mnum, IndexType type, IndexType phase, IndexType n, void *a,
+                      IndexType *ia, IndexType *ja, IndexType *perm, IndexType nrhs, IndexType *iparm, IndexType msglvl, void *b, void *x)
+    {
+      // Convert long int parameters to long long int for pardiso_64
+      long long int maxfct_ll = static_cast<long long int>(maxfct);
+      long long int mnum_ll = static_cast<long long int>(mnum);
+      long long int type_ll = static_cast<long long int>(type);
+      long long int phase_ll = static_cast<long long int>(phase);
+      long long int n_ll = static_cast<long long int>(n);
+      long long int nrhs_ll = static_cast<long long int>(nrhs);
+      long long int msglvl_ll = static_cast<long long int>(msglvl);
+      long long int error_ll = 0;
+      
+      // For arrays, we need to use reinterpret_cast since long int and long long int
+      // have the same size (8 bytes) on this system, just different types
+      ::pardiso_64(pt, &maxfct_ll, &mnum_ll, &type_ll, &phase_ll, &n_ll, a, 
+                   reinterpret_cast<long long int*>(ia), 
+                   reinterpret_cast<long long int*>(ja), 
+                   reinterpret_cast<long long int*>(perm), 
+                   &nrhs_ll, 
+                   reinterpret_cast<long long int*>(iparm), 
+                   &msglvl_ll, b, x, &error_ll);
+      
+      return static_cast<IndexType>(error_ll);
+    }
+  };
+
   template<class Pardiso> struct pardiso_traits;
 
   template<typename _MatrixType>
